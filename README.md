@@ -8,6 +8,61 @@ O backend respeita as camadas `domain`, `dto`, `repository`, `service`, `resourc
 
 O datasource padrão é `java:jboss/datasources/ExampleDS`, fornecido pelo WildFly. Os códigos gerados automaticamente usam seis caracteres Base62; a resposta inclui `shortUrl`, com base configurável e padrão `http://gld.at`.
 
+## Visão Geral da Arquitetura
+
+O diagrama resume o fluxo entre a SPA, os endpoints REST e as camadas de negócio e persistência.
+
+```mermaid
+flowchart LR
+  Browser["Navegador"]
+
+  subgraph Frontend["Front-end"]
+    SPA["Angular 19 SPA"]
+    Form["Formulário de criação"]
+    History["Tabela de histórico"]
+    Copy["Copiar link"]
+    Stats["Estatísticas de cliques"]
+    SPA --> Form
+    SPA --> History
+    SPA --> Copy
+    SPA --> Stats
+  end
+
+  subgraph AppServer["WildFly 10 | Java EE 7 | Java 8"]
+    subgraph API["API REST"]
+      JAXRS["JAX-RS management endpoints<br/>POST /api/v1/urls<br/>GET /api/v1/urls/recent<br/>GET /api/v1/urls/{shortCode}/stats"]
+      Redirect["RedirectResource<br/>GET /{shortCode}"]
+      Mapper["ExceptionMapper<br/>application/problem+json<br/>RFC 7807"]
+    end
+
+    subgraph Business["Camada de negócio"]
+      Service["ShortUrlService<br/>EJB @Singleton<br/>@Lock(WRITE) na criação"]
+      Base62["Geração Base62<br/>6 caracteres"]
+      BaseURL["Configuração BASE_URL<br/>system property > environment > default"]
+      Clicks["ClickTrackingService<br/>EJB assíncrono"]
+    end
+
+    subgraph Persistence["Camada de persistência"]
+      JPA["JPA 2.1 / Hibernate"]
+    end
+  end
+
+  Database["H2 ou PostgreSQL"]
+  Browser --> SPA
+  SPA -->|"HTTP / JSON"| JAXRS
+  JAXRS --> Service
+  Browser -->|"link curto"| Redirect
+  Redirect --> Service
+  Service --> Base62
+  Service --> BaseURL
+  Service --> JPA
+  Service -. exceções .-> Mapper
+  Redirect -->|"redirect 302"| Browser
+  Redirect --> Clicks
+  Clicks --> JPA
+  JPA --> Database
+```
+
 ## Como Executar
 
 ### API e WildFly
