@@ -1,0 +1,170 @@
+<div class="app-shell">
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="gld.at, início">
+      <span class="brand-mark">g</span>
+      <span class="brand-name">gld.at</span>
+    </a>
+    <div class="topbar-meta">
+      <span class="service-indicator"><span></span> Serviço de links</span>
+      <button class="refresh-button" type="button" (click)="loadRecent()" [disabled]="isLoadingRecent">
+        <span aria-hidden="true">↻</span>
+        Atualizar
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <section class="intro">
+      <p class="eyebrow">URL WORKSPACE <span>·</span> 01</p>
+      <h1>Links curtos.<br><span>Visão completa.</span></h1>
+      <p class="intro-copy">Crie um endereço fácil de compartilhar e acompanhe cada acesso em um só lugar.</p>
+    </section>
+
+    <section class="workspace-grid" aria-label="Criar link curto">
+      <form class="create-panel" (ngSubmit)="submitUrl()">
+        <div class="panel-heading">
+          <span class="step-number">01</span>
+          <div>
+            <h2>Novo link</h2>
+            <p>Informe o endereço de destino.</p>
+          </div>
+        </div>
+
+        <label for="originalUrl">URL de destino</label>
+        <input
+          id="originalUrl"
+          name="originalUrl"
+          type="url"
+          [(ngModel)]="originalUrl"
+          placeholder="https://exemplo.com/sua-pagina"
+          autocomplete="url"
+          required>
+
+        <label for="customAlias">Alias personalizado <span class="optional">opcional</span></label>
+        <div class="alias-input">
+          <span>gld.at/</span>
+          <input
+            id="customAlias"
+            name="customAlias"
+            type="text"
+            [(ngModel)]="customAlias"
+            placeholder="meu-link"
+            maxlength="32"
+            pattern="[A-Za-z0-9_-]{3,32}"
+            autocomplete="off">
+        </div>
+        <p class="field-hint">Use de 3 a 32 letras, números, hífens ou sublinhados.</p>
+
+        <button class="primary-button" type="submit" [disabled]="isSubmitting || !originalUrl.trim()">
+          <span>{{ isSubmitting ? 'Gerando link...' : 'Encurtar URL' }}</span>
+          <span aria-hidden="true">↗</span>
+        </button>
+      </form>
+
+      <section class="result-panel" aria-live="polite" aria-label="Resultado do link">
+        @if (generatedUrl; as result) {
+          <div class="result-content">
+            <div class="result-topline">
+              <span class="result-check" aria-hidden="true">✓</span>
+              <span>LINK PRONTO</span>
+            </div>
+            <h2>Compartilhe sem rodeios.</h2>
+            <p class="result-destination">{{ result.originalUrl }}</p>
+            <a class="short-url" [href]="result.shortUrl" target="_blank" rel="noopener noreferrer">{{ result.shortUrl }}</a>
+            <button class="copy-button" type="button" (click)="copyGeneratedUrl()">
+              <span aria-hidden="true">▢</span>
+              {{ copied ? 'Copiado' : 'Copiar link' }}
+            </button>
+          </div>
+        } @else {
+          <div class="result-empty">
+            <div class="empty-glyph" aria-hidden="true">↗</div>
+            <span class="empty-label">SEU PRÓXIMO LINK</span>
+            <p>O endereço encurtado aparecerá aqui, pronto para copiar.</p>
+          </div>
+        }
+        <div class="result-index"><span>GLD</span><span>LINKS / 2026</span></div>
+      </section>
+    </section>
+
+    @if (errorMessage) {
+      <div class="error-banner" role="alert">
+        <span>{{ errorMessage }}</span>
+        <button type="button" (click)="errorMessage = ''" aria-label="Fechar mensagem">Fechar</button>
+      </div>
+    }
+
+    <section class="history-section" aria-labelledby="history-title">
+      <div class="section-header">
+        <div>
+          <p class="eyebrow">ATIVIDADE RECENTE</p>
+          <h2 id="history-title">Seus links</h2>
+        </div>
+        <span class="result-count">{{ urls.length }} <span>/ 100</span></span>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Destino</th>
+              <th scope="col">Link curto</th>
+              <th scope="col">Criado em</th>
+              <th scope="col">Acessos</th>
+              <th scope="col"><span class="visually-hidden">Métricas</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (isLoadingRecent && urls.length === 0) {
+              <tr><td class="table-message" colspan="5">Carregando links...</td></tr>
+            } @else if (urls.length === 0) {
+              <tr><td class="table-message" colspan="5">Nenhum link criado. O primeiro começa no formulário acima.</td></tr>
+            } @else {
+              @for (url of urls; track url.shortCode) {
+                <tr>
+                  <td class="destination-cell" [title]="url.originalUrl">{{ url.originalUrl }}</td>
+                  <td><a class="table-link" [href]="url.shortUrl" target="_blank" rel="noopener noreferrer">{{ url.shortUrl }}</a></td>
+                  <td class="date-cell">{{ url.createdAt | date:'dd MMM yyyy, HH:mm' }}</td>
+                  <td><span class="click-count">{{ url.totalClicks }}</span></td>
+                  <td class="action-cell">
+                    <button class="metrics-button" type="button" (click)="toggleStats(url)" [attr.aria-expanded]="expandedCode === url.shortCode">
+                      {{ expandedCode === url.shortCode ? 'Fechar' : 'Métricas' }}
+                    </button>
+                  </td>
+                </tr>
+                @if (expandedCode === url.shortCode) {
+                  <tr class="metrics-row">
+                    <td colspan="5">
+                      @if (loadingStatsCode === url.shortCode) {
+                        <p class="metrics-loading">Buscando métricas...</p>
+                      } @else if (stats) {
+                        <div class="metrics-content">
+                          <div class="metric-total"><strong>{{ stats.totalClicks }}</strong><span>acessos registrados</span></div>
+                          <div class="timestamp-list">
+                            <span class="timestamp-label">ACESSOS RECENTES</span>
+                            @if (stats.clickTimestamps.length === 0) {
+                              <p>Nenhum acesso registrado.</p>
+                            } @else {
+                              @for (timestamp of stats.clickTimestamps.slice(0, 8); track $index) {
+                                <time>{{ timestamp | date:'dd MMM yyyy, HH:mm:ss' }}</time>
+                              }
+                              @if (stats.clickTimestamps.length > 8) {
+                                <span class="timestamp-more">Exibindo 8 de {{ stats.clickTimestamps.length }} registros</span>
+                              }
+                            }
+                          </div>
+                        </div>
+                      }
+                    </td>
+                  </tr>
+                }
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer"><span>gld.at</span><span>URLs mais simples, métricas mais claras.</span></footer>
+</div>
