@@ -6,7 +6,7 @@ O projeto contém uma API Java 8 empacotada como WAR para WildFly 10 e uma SPA A
 
 O backend respeita as camadas `domain`, `dto`, `repository`, `service`, `resource` e `exception`. A SPA fica em `frontend/` e consome a API pelo caminho relativo `/api/v1/urls`.
 
-O datasource padrão é `java:jboss/datasources/ExampleDS`, fornecido pelo WildFly. Os códigos gerados automaticamente usam seis caracteres Base62; a resposta inclui `shortUrl`, com base configurável e padrão `http://gld.at`.
+O datasource padrão é `java:jboss/datasources/ExampleDS`, fornecido pelo WildFly. O context root do WAR é `/sht`, definido em `src/main/webapp/WEB-INF/jboss-web.xml`. Os códigos gerados automaticamente usam seis caracteres Base62; a resposta inclui `shortUrl`, com base configurável e padrão local `http://localhost:8080/sht/`.
 
 ## Visão Geral da Arquitetura
 
@@ -77,14 +77,14 @@ O artefato fica em `target/shortener.war`. Para executar em Docker com links loc
 
 ```sh
 docker build -t shortener-wildfly10 .
-docker run --rm -p 8080:8080 -e SHORTENER_BASE_URL=http://localhost:8080/shortener shortener-wildfly10
+docker run --rm -p 8080:8080 -e SHORTENER_BASE_URL=http://localhost:8080/sht shortener-wildfly10
 ```
 
 Em produção, defina `SHORTENER_BASE_URL` com o domínio público, por exemplo `https://gld.at`. Também é possível configurar a base com a propriedade de sistema `-Dshortener.base-url=https://gld.at`; essa propriedade tem precedência sobre a variável de ambiente.
 
 ### SPA Angular
 
-Requisitos: Node.js 22 LTS e npm. A versão principal do Node está registrada em `frontend/.nvmrc` e declarada em `frontend/package.json`. O proxy Angular encaminha `/api` para `http://localhost:8080/shortener`, evitando CORS durante o desenvolvimento local.
+Requisitos: Node.js 22 LTS e npm. A versão principal do Node está registrada em `frontend/.nvmrc` e declarada em `frontend/package.json`. O proxy Angular encaminha `/api` para `http://localhost:8080/sht`, evitando CORS durante o desenvolvimento local.
 
 ```sh
 cd frontend

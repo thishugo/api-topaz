@@ -13,6 +13,7 @@ import com.example.shortener.exception.BusinessException;
 import com.example.shortener.repository.ShortUrlRepository;
 import java.time.LocalDateTime;
 import java.util.Optional;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
@@ -28,9 +29,14 @@ public class ShortUrlServiceTest {
     @InjectMocks
     private ShortUrlService service;
 
+    @Before
+    public void clearBaseUrlOverride() {
+        System.clearProperty("shortener.base-url");
+    }
+
     @Test
     public void createsUrlWithRequestedAlias() {
-        System.setProperty("shortener.base-url", "http://gld.at/");
+        System.setProperty("shortener.base-url", "http://localhost:8080/sht/");
         when(repository.findByShortCode("manual")).thenReturn(Optional.<ShortUrl>empty());
         CreateShortUrlRequest request = new CreateShortUrlRequest();
         request.setOriginalUrl("https://example.com/article");
@@ -39,7 +45,7 @@ public class ShortUrlServiceTest {
         ShortUrlResponse response = service.create(request);
 
         assertEquals("manual", response.getShortCode());
-        assertEquals("http://gld.at/manual", response.getShortUrl());
+        assertEquals("http://localhost:8080/sht/manual", response.getShortUrl());
         assertTrue(response.getCustomAlias());
         assertEquals(Long.valueOf(0L), response.getTotalClicks());
         ArgumentCaptor<ShortUrl> captor = ArgumentCaptor.forClass(ShortUrl.class);
@@ -56,7 +62,7 @@ public class ShortUrlServiceTest {
         ShortUrlResponse response = service.create(request);
 
         assertTrue(response.getShortCode().matches("[a-zA-Z0-9]{6}"));
-        assertEquals("http://gld.at/" + response.getShortCode(), response.getShortUrl());
+        assertEquals("http://localhost:8080/sht/" + response.getShortCode(), response.getShortUrl());
     }
 
     @Test

@@ -29,7 +29,7 @@ import javax.inject.Inject;
 @TransactionAttribute(TransactionAttributeType.REQUIRED)
 public class ShortUrlService {
     private static final String CODE_CHARACTERS = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    private static final String DEFAULT_BASE_URL = "http://gld.at";
+    private static final String DEFAULT_BASE_URL = "http://localhost:8080/sht/";
     private static final int CODE_LENGTH = 6;
     private static final SecureRandom RANDOM = new SecureRandom();
 
