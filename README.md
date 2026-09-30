@@ -158,3 +158,11 @@ npm run build
 ```
 
 Testes de integração podem implantar o WAR no WildFly para cobrir JPA, serialização, códigos HTTP e execução assíncrona, além de testar os fluxos da SPA contra o servidor integrado.
+
+O workflow do GitHub Actions executa `mvn clean verify` com Java 8, `npm ci` e `npm run build` com Node 22, publica o WAR como artefato e roda o smoke test integrado em WildFly 10. Para executar o smoke test localmente, inicie o WildFly e o Angular (`npm start`) e rode:
+
+```sh
+bash scripts/integration-smoke-test.sh
+```
+
+O workflow valida a aplicação em ambiente temporário; o deploy em um ambiente externo não é automatizado.

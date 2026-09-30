@@ -1,0 +1,123 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '8'
+          cache: maven
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Build and test backend
+        run: mvn --batch-mode clean verify
+
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - name: Build frontend
+        run: npm run build
+        working-directory: frontend
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: shortener-war
+          path: target/shortener.war
+          if-no-files-found: error
+          retention-days: 7
+
+  integration:
+    needs: build
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '8'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: shortener-war
+          path: target
+
+      - name: Download WildFly 10
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/wildfly"
+          curl --fail --location --retry 3 \
+            https://download.jboss.org/wildfly/10.1.0.Final/wildfly-10.1.0.Final.zip \
+            --output "$RUNNER_TEMP/wildfly.zip"
+          unzip -q "$RUNNER_TEMP/wildfly.zip" -d "$RUNNER_TEMP/wildfly"
+          echo "WILDFLY_HOME=$RUNNER_TEMP/wildfly/wildfly-10.1.0.Final" >> "$GITHUB_ENV"
+
+      - name: Run WildFly and Angular integration test
+        env:
+          SHORTENER_BASE_URL: http://localhost:8080/sht
+        run: |
+          set -euo pipefail
+          cp target/shortener.war "$WILDFLY_HOME/standalone/deployments/shortener.war"
+          "$WILDFLY_HOME/bin/standalone.sh" > "$RUNNER_TEMP/wildfly.log" 2>&1 &
+          wildfly_pid=$!
+          npm --prefix frontend start -- --host 127.0.0.1 > "$RUNNER_TEMP/angular.log" 2>&1 &
+          angular_pid=$!
+
+          cleanup() {
+            kill "$angular_pid" 2>/dev/null || true
+            if ! "$WILDFLY_HOME/bin/jboss-cli.sh" --connect --command=':shutdown' >/dev/null 2>&1; then
+              kill "$wildfly_pid" 2>/dev/null || true
+            fi
+            wait "$angular_pid" 2>/dev/null || true
+            wait "$wildfly_pid" 2>/dev/null || true
+          }
+          trap cleanup EXIT
+
+          ready=false
+          for attempt in $(seq 1 90); do
+            if curl --fail --silent http://localhost:8080/sht/api/v1/urls/recent >/dev/null \
+              && curl --fail --silent http://localhost:4200/ >/dev/null; then
+              ready=true
+              break
+            fi
+            if ! kill -0 "$wildfly_pid" 2>/dev/null || ! kill -0 "$angular_pid" 2>/dev/null; then
+              cat "$RUNNER_TEMP/wildfly.log" "$RUNNER_TEMP/angular.log"
+              exit 1
+            fi
+            sleep 2
+          done
+
+          if [[ "$ready" != true ]]; then
+            cat "$RUNNER_TEMP/wildfly.log" "$RUNNER_TEMP/angular.log"
+            exit 1
+          fi
+
+          bash scripts/integration-smoke-test.sh
