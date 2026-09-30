@@ -29,7 +29,7 @@ Em produção, defina `SHORTENER_BASE_URL` com o domínio público, por exemplo 
 
 ### SPA Angular
 
-Requisitos: Node.js 20 LTS e npm. O proxy Angular encaminha `/api` para `http://localhost:8080/shortener`, evitando CORS durante o desenvolvimento local.
+Requisitos: Node.js 22 LTS e npm. A versão principal do Node está registrada em `frontend/.nvmrc` e declarada em `frontend/package.json`. O proxy Angular encaminha `/api` para `http://localhost:8080/shortener`, evitando CORS durante o desenvolvimento local.
 
 ```sh
 cd frontend
