@@ -165,4 +165,6 @@ O workflow do GitHub Actions executa `mvn clean verify` com Java 8, `npm ci` e `
 bash scripts/integration-smoke-test.sh
 ```
 
-O workflow valida a aplicação em ambiente temporário; o deploy em um ambiente externo não é automatizado.
+O workflow é disparado em `push`, `pull_request` e manualmente por `workflow_dispatch`. Para consultar uma execução, abra a aba **Actions** do repositório, selecione o workflow **CI** e acesse o run desejado; verifique os jobs `build` e `integration` e consulte os logs se algum deles falhar. O WAR fica disponível como artefato `shortener-war` por sete dias.
+
+O workflow valida a aplicação em ambiente temporário; o deploy em um ambiente externo não é automatizado. A consulta dos runs deste repositório privado exige uma sessão autenticada no GitHub.

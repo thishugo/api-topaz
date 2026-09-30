@@ -14,3 +14,4 @@ O formato segue [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/), e o
 - Registro assíncrono de cliques e erros de negócio no formato RFC 7807.
 - Empacotamento WAR, imagem Docker WildFly 10 e testes unitários iniciais.
 - SPA Angular para criação de links, cópia da URL curta, histórico e consulta de métricas.
+- Workflow GitHub Actions para validar Java 8, Angular com Node 22, empacotamento WAR e smoke test integrado no WildFly 10.
