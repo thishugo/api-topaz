@@ -165,6 +165,18 @@ O workflow do GitHub Actions executa `mvn clean verify` com Java 8, `npm ci` e `
 bash scripts/integration-smoke-test.sh
 ```
 
-O workflow é disparado em `push`, `pull_request` e manualmente por `workflow_dispatch`. Para consultar uma execução, abra a aba **Actions** do repositório, selecione o workflow **CI** e acesse o run desejado; verifique os jobs `build` e `integration` e consulte os logs se algum deles falhar. O WAR fica disponível como artefato `shortener-war` por sete dias.
+O workflow é disparado em `push`, `pull_request` e manualmente por `workflow_dispatch`. Para consultar as cinco execuções mais recentes pelo GitHub CLI:
 
-O workflow valida a aplicação em ambiente temporário; o deploy em um ambiente externo não é automatizado. A consulta dos runs deste repositório privado exige uma sessão autenticada no GitHub.
+```sh
+gh run list --repo thishugo/api-topaz --limit 5
+```
+
+Para inspecionar o resultado e os jobs `build` e `integration` de uma execução, use o ID exibido na listagem:
+
+```sh
+gh run view <run-id> --repo thishugo/api-topaz
+```
+
+O acesso a este repositório privado exige autenticação prévia com `gh auth login`. Também é possível consultar os runs na aba **Actions** do repositório. O WAR fica disponível como artefato `shortener-war` por sete dias.
+
+O workflow valida a aplicação em ambiente temporário; o deploy em um ambiente externo não é automatizado.
